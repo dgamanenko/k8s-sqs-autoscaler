@@ -19,7 +19,7 @@ spec:
       serviceAccountName: sqs-autoscaler
       containers:
       - name: py-k8s-autoscaler
-        image: 123456789012.dkr.ecr.us-west-2.amazonaws.com/k8s-sqs-autoscaler:1.0.2
+        image: $(docker_repo_url)/k8s-sqs-autoscaler:1.0.2
         command:
           - ./k8s-sqs-autoscaler
           - --sqs-queue-url=https://sqs.$(AWS_REGION).amazonaws.com/$(AWS_ID)/$(SQS_QUEUE)
