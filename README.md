@@ -7,36 +7,41 @@ Create a kubernetes deployment like this:
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: my-k8s-autoscaler
+  name: py-k8s-autoscaler
 spec:
   revisionHistoryLimit: 1
   replicas: 1
   template:
     metadata:
       labels:
-        app: my-k8s-autoscaler
+        app: py-k8s-autoscaler
     spec:
+      serviceAccountName: sqs-autoscaler
       containers:
-      - name: my-k8s-autoscaler
-        image: sideshowbandana/k8s-sqs-autoscaler:1.0.0
+      - name: py-k8s-autoscaler
+        image: 123456789012.dkr.ecr.us-west-2.amazonaws.com/k8s-sqs-autoscaler:1.0.2
         command:
           - ./k8s-sqs-autoscaler
-          - --sqs-queue-url=https://sqs.$(AWS_REGION).amazonaws.com/$(AWS_ID)/$(SQS_QUEUE) # required
-          - --kubernetes-deployment=$(KUBERNETES_DEPLOYMENT)
-          - --kubernetes-namespace=$(K8S_NAMESPACE) # optional
-          - --aws-region=us-west-2  #required
-          - --poll-period=10 # optional
-          - --scale-down-cool-down=30 # optional
-          - --scale-up-cool-down=10 # optional
-          - --scale-up-messages=20 # optional
-          - --scale-down-messages=10 # optional
-          - --max-pods=30 # optional
-          - --min-pods=1 # optional
+          - --sqs-queue-url=https://sqs.$(AWS_REGION).amazonaws.com/$(AWS_ID)/$(SQS_QUEUE)
+          - --kubernetes-deployment=$(SQS_AUTOSCALER_KUBERNETES_DEPLOYMENT)
+          - --kubernetes-namespace=$(POD_NAMESPACE)
+          - --poll-period=10
+          - --scale-down-cool-down=30
+          - --scale-up-cool-down=10
+          - --scale-up-messages=20 # start scale up when sqs_message_count >= scale-up-messages count
+          - --scale-down-messages=10 # start scale down when sqs_message_count <= scale-down-messages count
+          - --get-messages-from-queue=1 # number of messages to delete from sqs after each scale up
+          - --max-pods=30
+          - --min-pods=1
         env:
-          - name: K8S_NAMESPACE
+          - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          - name: AWS_DEFAULT_REGION
+            value: "us-west-2"
+          - name: SQS_AUTOSCALER_KUBERNETES_DEPLOYMENT
+            value: "deployment-name"
         resources:
           requests:
             memory: "64Mi"
@@ -47,4 +52,42 @@ spec:
         ports:
         - containerPort: 80
 
+```
+
+Kubernetes permissions example
+
+```
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sqs-autoscaler
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: sqs-autoscaler
+rules:
+  - apiGroups:
+    - extensions
+    resources:
+    - deployments
+    verbs:
+    - get
+    - list
+    - watch
+    - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: sqs-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sqs-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: sqs-autoscaler
+    namespace: example-namespace
 ```

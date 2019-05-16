@@ -16,9 +16,6 @@ if __name__ == '__main__':
     parser.add_option("--kubernetes-namespace",
                       dest="kubernetes_namespace",
                       help="")
-    parser.add_option("--aws-region",
-                      dest="aws_region",
-                      help="")
     parser.add_option("--poll-period",
                       dest="poll_period",
                       type="int",
@@ -44,6 +41,11 @@ if __name__ == '__main__':
                       type="int",
                       default=10,
                       help="")
+    parser.add_option("--get-messages-from-queue",
+                      dest="get_messages_from_queue",
+                      type="int",
+                      default=0,
+                      help="")
     parser.add_option("--max-pods",
                       dest="max_pods",
                       type="int",
@@ -54,15 +56,12 @@ if __name__ == '__main__':
                       type="int",
                       default=1,
                       help="")
-
     (options, args) = parser.parse_args()
 
     if not options.sqs_queue_url:
         parser.error('SQS_QUEUE_URL not given')
     if not options.kubernetes_deployment:
         parser.error('KUBERNETES_DEPLOYMENT not given')
-    if not options.aws_region:
-        parser.error('AWS_REGION not given')
     if not options.kubernetes_namespace:
         parser.error('KUBERNETES_NAMESPACE not given')
     if not options.kubernetes_deployment:

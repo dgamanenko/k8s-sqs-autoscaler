@@ -1,10 +1,11 @@
-FROM python:3.6
+FROM python:3.7
+MAINTAINER Dmitry Gamanenko
+
 WORKDIR /usr/src/app
 
-COPY scripts/dependencies.sh /tmp/dependencies.sh
-RUN /tmp/dependencies.sh
-
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
+RUN apt-get update -y && \
+	apt-get install -y --no-install-recommends python-setuptools && \
+	rm -rf /var/lib/apt/lists/*
 
 COPY . .
+RUN pip install --upgrade pip && pip install -r requirements.txt

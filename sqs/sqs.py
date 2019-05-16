@@ -1,8 +1,18 @@
 import boto3
-import os
+import os,logging, sys
 from time import sleep, time
-from logs.log import logger
 from kubernetes import client, config
+
+#from logs.log import logger
+
+logger = logging.getLogger()  
+logger.setLevel(logging.DEBUG)  
+
+ch = logging.StreamHandler(sys.stdout)  
+ch.setLevel(logging.DEBUG)  
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')  
+ch.setFormatter(formatter)  
+logger.addHandler(ch)  
 
 class SQSPoller:
 
@@ -18,6 +28,39 @@ class SQSPoller:
         self.extensions_v1_beta1 = client.ExtensionsV1beta1Api()
         self.last_scale_up_time = time()
         self.last_scale_down_time = time()
+
+    def get_messages_from_queue(self):
+
+        messages = []
+
+        for i in range(self.options.get_messages_from_queue):
+
+            resp = self.sqs_client.receive_message(
+                QueueUrl=self.options.sqs_queue_url,
+                AttributeNames=['All']
+            )
+
+            try:
+                messages.extend(resp['Messages'])
+            except KeyError:
+                break
+
+            entries = [
+                {'Id': msg['MessageId'], 'ReceiptHandle': msg['ReceiptHandle']}
+                for msg in resp['Messages']
+            ]
+
+            resp = self.sqs_client.delete_message_batch(
+                QueueUrl=self.options.sqs_queue_url, Entries=entries
+            )
+
+            if len(resp['Successful']) != len(entries):
+                logger.debug("Failed to delete messages: entries={} resp={}".format(entries, resp))
+                raise RuntimeError(
+                    f"Failed to delete messages: entries={entries!r} resp={resp!r}"
+                )
+
+        return messages
 
     def message_count(self):
         response = self.sqs_client.get_queue_attributes(
@@ -52,6 +95,11 @@ class SQSPoller:
             logger.info("Scaling up")
             deployment.spec.replicas += 1
             self.update_deployment(deployment)
+            if self.options.get_messages_from_queue > 0:
+                logger.info("Start Polling SQS Message...")
+                self.get_messages_from_queue()
+            else:
+                logger.info("Skip Polling SQS Message...")
         elif deployment.spec.replicas > self.options.max_pods:
             self.scale_down()
         else:
@@ -91,5 +139,6 @@ def run(options):
     """
     poll_period is set as as part of k8s deployment env variable
     sqs_queue_url is set as as part of k8s deployment env variable
+    AWS_DEFAULT_REGION is set as as part of k8s deployment env variable
     """
     SQSPoller(options).run()
