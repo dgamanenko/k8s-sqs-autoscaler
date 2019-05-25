@@ -4,7 +4,6 @@ from optparse import OptionParser
 from sqs import sqs
 from logs.log import logger
 
-
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("--sqs-queue-url",

@@ -1,18 +1,7 @@
 import boto3
-import os,logging, sys
 from time import sleep, time
 from kubernetes import client, config
-
-#from logs.log import logger
-
-logger = logging.getLogger()  
-logger.setLevel(logging.DEBUG)  
-
-ch = logging.StreamHandler(sys.stdout)  
-ch.setLevel(logging.DEBUG)  
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')  
-ch.setFormatter(formatter)  
-logger.addHandler(ch)  
+from logs.log import logger
 
 class SQSPoller:
 

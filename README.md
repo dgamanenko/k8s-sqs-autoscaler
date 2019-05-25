@@ -42,6 +42,8 @@ spec:
             value: "us-west-2"
           - name: SQS_AUTOSCALER_KUBERNETES_DEPLOYMENT
             value: "deployment-name"
+          - name: LOGGING_LEVEL
+            value: "ERROR"
         resources:
           requests:
             memory: "64Mi"
