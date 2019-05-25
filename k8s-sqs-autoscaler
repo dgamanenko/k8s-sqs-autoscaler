@@ -63,7 +63,5 @@ if __name__ == '__main__':
         parser.error('KUBERNETES_DEPLOYMENT not given')
     if not options.kubernetes_namespace:
         parser.error('KUBERNETES_NAMESPACE not given')
-    if not options.kubernetes_deployment:
-        parser.error('KUBERNETES_DEPLOYMENT not given')
     logger.debug(options)
     sqs.run(options)
